@@ -6,22 +6,22 @@ class UserQueryProcessor{
     static selectUserByEmailQuery = "SELECT * FROM public. \"user\" where email = $1";
     static selectAllFromUser = "SELECT * FROM public. \"user\"";
 
-    static async CreateUser(user){
+    static async Create(user){
         const result = await PostgresDB.client.query
             (this.insertIntoUserQuery,
             [user.name, user.birthday, user.email, user.password, user.creation_date, user.role,user.banned]);
         return result;
     }
 
-    static async UserWithEmailExists(user){
+    static async GetOneByEmail(user){
         const result = await PostgresDB.client.query(this.selectUserByEmailQuery, [user.email]);
         if (result.rows.length === 0) {
             return false;
         }
-        return true;
+        return result;
     }
 
-    static async GetAllUsers(){
+    static async GetAll(){
         const result = await PostgresDB.client.query(this.selectAllFromUser);
         return result;
     }
