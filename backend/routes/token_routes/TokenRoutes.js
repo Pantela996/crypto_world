@@ -4,7 +4,7 @@ const Auth = require('../../middleware/Authenticator');
 const TokenRepository = require('../../repository/TokenRepository');
 const ResponseModel = require('../../models/ResponseModel');
 
-router.post('/issueRequest', [Auth.ValidateTokenRequest, Auth.AuthenticateToken], async (req, res) => {
+router.post('/createIssueRequest', [Auth.ValidateTokenRequest, Auth.AuthenticateToken], async (req, res) => {
   const result = await TokenRepository.CreateToken(req);
   if (result.success) {
     res.json(new ResponseModel().Success(result.data));
@@ -22,6 +22,13 @@ router.put('/approveIssueRequest', [Auth.ValidateTokenRequest, Auth.Authenticate
   }
 });
 
-//router.post('/createPurchaseRequest', [])
+router.post('/createPurchaseRequest', [Auth.ValidatePurchaseRequest, Auth.AuthenticateToken], async(req,res) => {
+  const result = await TokenRepository.CreatePurchase(req);
+  if (result.success) {
+    res.json(new ResponseModel().Success(result.data));
+  } else {
+    res.json(new ResponseModel().Failed(result.message));
+  }
+})
 
 module.exports = router;

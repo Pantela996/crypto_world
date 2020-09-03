@@ -1,5 +1,6 @@
 const HashUtil = require('../helpers/HashUtil');
 const UserQueryProcessor = require('../db/query_processors/UserQueryProcessor');
+const PortfolioQueryProcessor = require('../db/query_processors/PortfolioQueryProcessor');
 const ResponseBuilder = require('../helpers/ResponseBuilder');
 const ResponseCodes = require('../helpers/ResponseCodes');
 const jwt = require('jsonwebtoken');
@@ -7,14 +8,16 @@ const jwt = require('jsonwebtoken');
 class UserRepository {
   static async RegisterUser (req) {
     try {
-      const userFoundByEMail = await UserQueryProcessor.GetOneByEmail(req.body);
+      const userFoundByEmail = await UserQueryProcessor.GetOneByEmail(req.body);
       // 409 is conflict error
-      if (userFoundByEMail) {
+      if (userFoundByEmail) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.EMAIL_ALREADY_EXISTS, 409, null);
       }
       // Succedded
       req.body.password = await HashUtil.Hash(req.body.password);
       const insertIntoUser = await UserQueryProcessor.Create(req.body);
+      const addedTokenToPortfolio = await PortfolioQueryProcessor.Create('9', insertIntoUser.rows[0].user_id, '5000');
+
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, 'Success');
     } catch (err) {
       console.log(err);

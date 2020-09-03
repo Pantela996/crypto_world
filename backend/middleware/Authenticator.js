@@ -17,7 +17,6 @@ class Authenticaton {
   }
 
   static ValidateLoginData (req, res, next) {
-    console.log("came");
     var paramsValid = Authenticaton.CheckAllParamsExist(req.body);
     if (paramsValid && Authenticaton.ValidateEmailFormat(req.body.email)) {
       next();
