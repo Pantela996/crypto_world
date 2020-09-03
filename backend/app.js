@@ -3,12 +3,14 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var userRouter = require('./routes/user_routes/userRoutes');
-var postgresDB = require('./db/PostgresDB');
+var UserRouter = require('./routes/user_routes/userRoutes');
+var AuthRouter = require('./routes/auth_routes/AuthRoutes');
+var PostgresDB = require('./db/PostgresDB');
+const { auth } = require('./helpers/ResponseCodes');
 var app = express();
 require('dotenv').config();
 
-postgresDB.Connect();
+PostgresDB.Connect();
 
 app.use(logger('dev'));
 app.use(express.json()); // => req.body
@@ -17,7 +19,8 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ROUTES//
-app.use('/user', userRouter);
+app.use('/user', UserRouter);
+app.use('/', AuthRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

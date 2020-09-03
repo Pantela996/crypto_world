@@ -1,19 +1,29 @@
-const { auth } = require('../helpers/ResponseCodes');
 const  jwt  = require('jsonwebtoken');
-const { body } = require('express-validator');
+const ResponseBuilder = require('../helpers/ResponseBuilder');
+const ResponseCodes = require('../helpers/ResponseCodes');
 
 class Authenticaton {
   
   static ValidateRegisterData (req, res, next) {
-    next();
+    var paramsValid = Authenticaton.CheckAllParamsExist(req.body);
+    var emailFormatValid = Authenticaton.ValidateEmailFormat(req.body.email);
+    // We can add customized errors, for every missed param, in this its one check for all
+    var passwordLengthValid = Authenticaton.CheckPasswordLength(req.body.password);
+
+    if (paramsValid && emailFormatValid && passwordLengthValid) {
+      next();
+    } else {
+      res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_QUERY_PARAMS_FORMAT, 400, null));
+    } 
   }
 
   static ValidateLoginData (req, res, next) {
-        // username must be an email
-    body('email').isEmail(),
-    // password must be at least 5 chars long
-    body('password').isLength({ min: 5 });
-    next();
+    var paramsValid = Authenticaton.CheckAllParamsExist(req.body);
+    if (paramsValid && Authenticaton.ValidateEmail(req.body.email)) {
+      next();
+    } else {
+      res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_QUERY_PARAMS_FORMAT, 400, null));
+    }
   }
 
   static AuthenticateToken(req,res,next) {
@@ -27,6 +37,31 @@ class Authenticaton {
       next();
     });
   }
+
+  static ValidateTokenRequest(res, req, next){
+    next();
+  }
+
+  static CheckAllParamsExist(object){
+    for(const value in object){
+      console.log(object[value]);
+      if(!object[value] || object[value] === '') return false;
+      else  continue;
+    }
+    return true;
+  }
+
+  static ValidateEmailFormat(email) {
+    const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(email);
+  }
+
+  static CheckPasswordLength(pass){
+    return pass.length >= 5;
+  }
+
+  
+
 }
 
 module.exports = Authenticaton;
