@@ -4,9 +4,7 @@ const ResponseBuilder = require('../helpers/ResponseBuilder');
 const ResponseCodes = require('../helpers/ResponseCodes');
 const jwt = require('jsonwebtoken');
 
-
 class UserRepository {
-
   static async RegisterUser (req) {
     try {
       const userFoundByEMail = await UserQueryProcessor.GetOneByEmail(req.body);
@@ -14,28 +12,25 @@ class UserRepository {
       if (userFoundByEMail) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.EMAIL_ALREADY_EXISTS, 409, null);
       }
-      // Succeded
+      // Succedded
       req.body.password = await HashUtil.Hash(req.body.password);
-      console.log("came");
       const insertIntoUser = await UserQueryProcessor.Create(req.body);
-      return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, insertIntoUser);
-    } catch(err) {
+      return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, 'Success');
+    } catch (err) {
       console.log(err);
-      console.log("Error in user repository, register.");
+      console.log('Error in user repository, register.');
       return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INTERNAL_SERVER_ERROR, 500, null);
     }
-
   }
 
   static async GetAllUsers () {
-    try{
+    try {
       const allUsers = await UserQueryProcessor.GetAll();
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, allUsers);
     } catch {
-      console.log("Error in user repository, get all users.");
+      console.log('Error in user repository, get all users.');
       return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INTERNAL_SERVER_ERROR, 500, null);
     }
-
   }
 
   static async Login (req) {
@@ -55,12 +50,12 @@ class UserRepository {
       const accessToken = jwt.sign(user.rows[0], process.env.ACCESS_TOKEN_SECRET);
 
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, accessToken);
-    } catch(err) {
+    } catch (err) {
       console.log(err);
-      console.log("Error in user repository, login.");
+      console.log('Error in user repository, login.');
       return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INTERNAL_SERVER_ERROR, 500, null);
     }
-  } 
+  }
 }
 
 module.exports = UserRepository;

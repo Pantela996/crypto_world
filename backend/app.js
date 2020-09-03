@@ -5,8 +5,8 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var UserRouter = require('./routes/user_routes/userRoutes');
 var AuthRouter = require('./routes/auth_routes/AuthRoutes');
+var TokenRouter = require('./routes/token_routes/TokenRoutes');
 var PostgresDB = require('./db/PostgresDB');
-const { auth } = require('./helpers/ResponseCodes');
 var app = express();
 require('dotenv').config();
 
@@ -20,6 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ROUTES//
 app.use('/user', UserRouter);
+app.use('/token', TokenRouter);
 app.use('/', AuthRouter);
 
 // catch 404 and forward to error handler
