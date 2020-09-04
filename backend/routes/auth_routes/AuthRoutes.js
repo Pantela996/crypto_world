@@ -6,6 +6,7 @@ const ResponseModel = require('../../models/ResponseModel');
 
 router.post('/register', Auth.ValidateRegisterData, async (req, res) => {
   const result = await UserRepo.RegisterUser(req);
+  res.status(result.status_code);
   if (result.success) {
     res.json(new ResponseModel().Success(result.data));
   } else {
@@ -16,6 +17,7 @@ router.post('/register', Auth.ValidateRegisterData, async (req, res) => {
 
 router.post('/login', Auth.ValidateLoginData, async (req, res) => {
   const result = await UserRepo.Login(req);
+  res.status(result.status_code);
   if (result.success) {
     res.json(new ResponseModel().Success(result.data));
   } else {

@@ -5,7 +5,8 @@ class UserQueryProcessor{
     static insertIntoUserQuery = "INSERT INTO public. \"user\" (name, birthday, email,password) VALUES ($1,$2,$3,$4) RETURNING *";
     static selectUserByEmailQuery = "SELECT * FROM public. \"user\" where email = $1";
     static selectUserByIDQuery = "SELECT * FROM public. \"user\" where user_id = $1";
-    static selectAllFromUser = "SELECT * FROM public. \"user\"";
+    static selectAllFromUserQuery = "SELECT * FROM public. \"user\"";
+    static updateUserBannedStatusQuery = "UPDATE public. \"user\" SET banned = 'true' where user_id = $1";
 
     static async Create(user){
         const result = await PostgresDB.client.query
@@ -31,8 +32,13 @@ class UserQueryProcessor{
         return result.rows[0];
     }
 
+    static async Ban(user_id){
+        const result = await PostgresDB.client.query(this.updateUserBannedStatusQuery, [user_id]);
+        return result;
+    }
+
     static async GetAll(){
-        const result = await PostgresDB.client.query(this.selectAllFromUser);
+        const result = await PostgresDB.client.query(this.selectAllFromUserQuery);
         return result;
     }
 
