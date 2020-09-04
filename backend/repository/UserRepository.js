@@ -16,7 +16,7 @@ class UserRepository {
       // Succedded
       req.body.password = await HashUtil.Hash(req.body.password);
       const insertIntoUser = await UserQueryProcessor.Create(req.body);
-      const addedTokenToPortfolio = await PortfolioQueryProcessor.Create('9', insertIntoUser.rows[0].user_id, '5000');
+      const addedTokenToPortfolio = await PortfolioQueryProcessor.Create('9', insertIntoUser.user_id, '5000');
 
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, 'Success');
     } catch (err) {
@@ -44,13 +44,13 @@ class UserRepository {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_EMAIL_OR_PASSWORD, 400, null);
       }
 
-      const isValidPassword = await HashUtil.Compare(req.body.password, user.rows[0].password);
+      const isValidPassword = await HashUtil.Compare(req.body.password, user.password);
       // Bad Request error
       if (!isValidPassword) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_PASSWORD, 400, null);
       }
       // Get token
-      const accessToken = jwt.sign(user.rows[0], process.env.ACCESS_TOKEN_SECRET);
+      const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
 
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, accessToken);
     } catch (err) {

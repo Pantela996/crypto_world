@@ -10,7 +10,7 @@ class TokenQueryProcessor{
     static async Create(token, userID){
         console.log(userID);
         const result = await PostgresDB.client.query(this.insertIntoTokenQuery, [token.name, token.initial_coin_offering, token.price_per_unit, userID]);
-        return result;
+        return result.rows[0];
     }
 
     static async GetOneByNameAndUser(token, userID){
@@ -18,7 +18,7 @@ class TokenQueryProcessor{
         if (result && result.rows.length === 0) {
             return false;
         }
-        return result;
+        return result.rows[0];
     }
 
     static async GetOneByID(token){
@@ -27,12 +27,12 @@ class TokenQueryProcessor{
         if (result && result.rows.length === 0) {
             return false;
         }
-        return result;
+        return result.rows[0];
     }
 
     static async ApproveToken(token, userID){
         const result = await PostgresDB.client.query(this.updateTokenStatusByNameQuery, [token.name, userID]);
-        return result;
+        return result.rows[0];
     }
 
 }

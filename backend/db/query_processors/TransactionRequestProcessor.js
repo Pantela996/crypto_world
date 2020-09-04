@@ -5,7 +5,7 @@ class TransactionRequestProcessor{
 
     static async Create(buyer_id, seller_id, amount, token_id){
         const result = await PostgresDB.client.query(this.insertIntoTransactionRequestQuery, [buyer_id, seller_id, amount, token_id]);
-        return result;
+        return result.rows[0];
     }
 
 

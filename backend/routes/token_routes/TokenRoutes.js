@@ -13,7 +13,7 @@ router.post('/createIssueRequest', [Auth.ValidateTokenRequest, Auth.Authenticate
   }
 });
 
-router.put('/approveIssueRequest', [Auth.ValidateTokenRequest, Auth.AuthenticateToken] , async(req,res) => {
+router.put('/approveIssueRequest', [Auth.VerifyDataPresence, Auth.AuthenticateToken], async (req, res) => {
   const result = await TokenRepository.ApproveToken(req);
   if (result.success) {
     res.json(new ResponseModel().Success(result.data));
@@ -22,13 +22,13 @@ router.put('/approveIssueRequest', [Auth.ValidateTokenRequest, Auth.Authenticate
   }
 });
 
-router.post('/createPurchaseRequest', [Auth.ValidatePurchaseRequest, Auth.AuthenticateToken], async(req,res) => {
+router.post('/createPurchaseRequest', [Auth.VerifyDataPresence, Auth.AuthenticateToken], async (req, res) => {
   const result = await TokenRepository.CreatePurchase(req);
   if (result.success) {
     res.json(new ResponseModel().Success(result.data));
   } else {
     res.json(new ResponseModel().Failed(result.message));
   }
-})
+});
 
 module.exports = router;

@@ -8,19 +8,19 @@ class PortfolioQueryProcessor{
 
     static async Create(tokenID, userID, amount){
         const result = await PostgresDB.client.query(this.insertIntoPortfolioQuery, [userID, tokenID, amount]);
-        return result;
+        return result.rows[0];
     }
 
     static async GetPortfolioBaseTokenAmount(user){
         console.log(user.user_id);
         const result = await PostgresDB.client.query(this.selectBaseTokenQuery, [user.user_id]);
-        return result;
+        return result.rows[0];
     }
 
     static async GetOneByID(tokenID, user){
         console.log(user.user_id, tokenID);
         const result = await PostgresDB.client.query(this.selectTokenByIDQuery, [tokenID, user.user_id]);
-        return result;
+        return result.rows[0];
     }
 
 }

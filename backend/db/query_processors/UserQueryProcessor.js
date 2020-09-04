@@ -11,7 +11,7 @@ class UserQueryProcessor{
         const result = await PostgresDB.client.query
             (this.insertIntoUserQuery,
             [user.name, user.birthday, user.email, user.password]);
-        return result;
+        return result.rows[0];
     }
 
     static async GetOneByEmail(user){
@@ -19,7 +19,7 @@ class UserQueryProcessor{
         if (result && result.rows.length === 0) {
             return false;
         }
-        return result;
+        return result.rows[0];
     }
 
     
@@ -28,7 +28,7 @@ class UserQueryProcessor{
         if (result && result.rows.length === 0) {
             return false;
         }
-        return result;
+        return result.rows[0];
     }
 
     static async GetAll(){
