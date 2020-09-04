@@ -22,6 +22,6 @@ router.put('/banUser', Auth.AuthenticateToken, async (req, res) => {
   } else {
     res.json(new ResponseModel().Failed(result.message));
   }
-})
+});
 
 module.exports = router;

@@ -52,7 +52,7 @@ class UserRepository {
       }
 
       // Users banned?
-      if(user.banned === true){
+      if (user.banned === true) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_BANNED, 409, null);
       }
 
@@ -67,7 +67,7 @@ class UserRepository {
     }
   }
 
-  static async BanUser(req){
+  static async BanUser (req) {
     try {
       if (req.user.role !== UserRoleModel.role.ADMIN) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.FORBIDDEN_ACCESS, 403, null);
@@ -78,13 +78,13 @@ class UserRepository {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_DOES_NOT_EXIST, 400, null);
       }
 
-      if(user.banned === true){
+      if (user.banned === true) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_ALREADY_BANNED, 409, null);
       }
 
       const bannedUser = await UserQueryProcessor.Ban(user.user_id);
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, null);
-    } catch(err) {
+    } catch (err) {
       console.log(err);
       console.log('Error in user repository, banUser.');
       return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INTERNAL_SERVER_ERROR, 500, null);

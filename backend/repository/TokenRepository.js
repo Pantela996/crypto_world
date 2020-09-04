@@ -7,7 +7,6 @@ const TransactionRequestProcessor = require('../db/query_processors/TransactionR
 const UserRoleModel = require('../models/UserRoleModel');
 const TokenStatusModel = require('../models/TokenStatusModel');
 const TransactionRequestStatusModel = require('../models/TranscationRequestStatusModel');
-const { updateTransactionRequestQuery } = require('../db/query_processors/TransactionRequestProcessor');
 
 class TokenRepository {
   static async CreateToken (req) {
@@ -21,11 +20,11 @@ class TokenRepository {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.NAME_ALREADY_EXISTS, 409, null);
       }
 
-      if(!userTokenHolder){
+      if (!userTokenHolder) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
       }
 
-      if(userTokenHolder.banned === true){
+      if (userTokenHolder.banned === true) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_BANNED, 409, null);
       }
 
@@ -55,16 +54,16 @@ class TokenRepository {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
       }
 
-      if(tokenFoundByName.status === TokenStatusModel.status.REJECTED){
+      if (tokenFoundByName.status === TokenStatusModel.status.REJECTED) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_REJECTED, 409, null);
       }
 
-      const userTokenHolder = await UserQueryProcessor.GetOneByID({user_id : tokenFoundByName.user_id});
-      if(!userTokenHolder){
+      const userTokenHolder = await UserQueryProcessor.GetOneByID({ user_id: tokenFoundByName.user_id });
+      if (!userTokenHolder) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
       }
 
-      if(userTokenHolder.banned === true){
+      if (userTokenHolder.banned === true) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_BANNED, 409, null);
       }
 
@@ -84,7 +83,7 @@ class TokenRepository {
     }
   }
 
-  static async RejectToken(req) {
+  static async RejectToken (req) {
     try {
       if (req.user.role !== UserRoleModel.role.ADMIN) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.FORBIDDEN_ACCESS, 403, null);
@@ -110,7 +109,7 @@ class TokenRepository {
       console.log(rejectedToken);
 
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, null);
-    } catch(err) {
+    } catch (err) {
       console.log(err);
       console.log('Error in token repository, rejectToken.');
       return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INTERNAL_SERVER_ERROR, 500, null);
@@ -127,7 +126,7 @@ class TokenRepository {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 409, null);
       }
 
-      if(buyerUser.banned === true || sellerUser.banned === true){
+      if (buyerUser.banned === true || sellerUser.banned === true) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_BANNED, 409, null);
       }
 
@@ -141,7 +140,7 @@ class TokenRepository {
       const buyerUserPortfolio = await PortfolioQueryProcessor.GetPortfolioBaseTokenAmount(buyerUser);
       const sellerUserPortfolio = await PortfolioQueryProcessor.GetOneByID(req.params.token_id, sellerUser);
 
-      if(!sellerUserPortfolio || !buyerUserPortfolio) {
+      if (!sellerUserPortfolio || !buyerUserPortfolio) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 409, null);
       }
 
@@ -182,7 +181,6 @@ class TokenRepository {
 
       const buyerUser = await UserQueryProcessor.GetOneByID({ user_id: transactionRequest.buyer_id });
       const sellerUser = await UserQueryProcessor.GetOneByID({ user_id: transactionRequest.seller_id });
-      
 
       // Check if Participants and exist
       var participantsExist = await this.CheckIfTransactionParticipantsExist(buyerUser, sellerUser);
@@ -191,7 +189,7 @@ class TokenRepository {
       }
 
       // Users banned?
-      if(buyerUser.banned === true || sellerUser.banned === true){
+      if (buyerUser.banned === true || sellerUser.banned === true) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_BANNED, 409, null);
       }
 
