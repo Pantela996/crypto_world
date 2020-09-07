@@ -3,6 +3,7 @@ var router = express.Router();
 const Auth = require('../../middleware/Authenticator');
 const UserRepo = require('../../repository/UserRepository');
 const ResponseModel = require('../../models/ResponseModel');
+const { AuthenticateAdminToken } = require('../../middleware/Authenticator');
 
 router.get('/all', Auth.AuthenticateToken, async (req, res) => {
   const result = await UserRepo.GetAllUsers();
@@ -14,7 +15,7 @@ router.get('/all', Auth.AuthenticateToken, async (req, res) => {
   }
 });
 
-router.put('/banUser', Auth.AuthenticateToken, async (req, res) => {
+router.put('/ban/:id', [Auth.AuthenticateToken, Auth.AuthenticateAdminToken], async (req, res) => {
   const result = await UserRepo.BanUser(req);
   res.status(result.status_code);
   if (result.success) {

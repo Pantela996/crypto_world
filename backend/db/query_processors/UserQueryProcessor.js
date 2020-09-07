@@ -3,10 +3,10 @@ var PostgresDB = require('../PostgresDB');
 class UserQueryProcessor{
 
     static insertIntoUserQuery = "INSERT INTO public. \"user\" (name, birthday, email,password) VALUES ($1,$2,$3,$4) RETURNING *";
-    static selectUserByEmailQuery = "SELECT * FROM public. \"user\" where email = $1";
-    static selectUserByIDQuery = "SELECT * FROM public. \"user\" where user_id = $1";
+    static selectUserByEmailQuery = "SELECT * FROM public. \"user\" WHERE email = $1";
+    static selectUserByIDQuery = "SELECT * FROM public. \"user\" WHERE user_id = $1";
     static selectAllFromUserQuery = "SELECT * FROM public. \"user\"";
-    static updateUserBannedStatusQuery = "UPDATE public. \"user\" SET banned = 'true' where user_id = $1";
+    static updateUserBannedStatusQuery = "UPDATE public. \"user\" SET banned = 'true' WHERE user_id = $1";
 
     static async Create(user){
         const result = await PostgresDB.client.query
@@ -22,7 +22,6 @@ class UserQueryProcessor{
         }
         return result.rows[0];
     }
-
     
     static async GetOneByID(user){
         const result = await PostgresDB.client.query(this.selectUserByIDQuery, [user.user_id]);

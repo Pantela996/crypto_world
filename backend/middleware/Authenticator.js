@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const ResponseBuilder = require('../helpers/ResponseBuilder');
 const ResponseCodes = require('../helpers/ResponseCodes');
 const ValidationHelper = require('../helpers/ValidationHelper');
+const UserRoleModel = require('../models/UserRoleModel');
 
 class Authentication {
   static ValidateRegisterData (req, res, next) {
@@ -29,13 +30,20 @@ class Authentication {
   static AuthenticateToken (req, res, next) {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
-    if (token == null) return res.sendStatus(401);
+    if (token == null) res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.LOGIN_FAILED, 401, null));
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-      if (err) return res.sendStatus(403);
+      if (err)  res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.NOT_AUTHORIZED, 403, null));
       req.user = user;
       next();
     });
+  }
+
+  static AuthenticateAdminToken(req,res,next) {
+    if(req.user.role !== UserRoleModel.role.ADMIN) {
+      res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.NOT_AUTHORIZED, 403, null));
+    }
+    next();
   }
 
   static ValidateTokenRequest (req, res, next) {

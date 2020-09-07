@@ -1,6 +1,7 @@
 const HashUtil = require('../helpers/HashUtil');
 const UserQueryProcessor = require('../db/query_processors/UserQueryProcessor');
 const PortfolioQueryProcessor = require('../db/query_processors/PortfolioQueryProcessor');
+const TokenQueryProcessor = require('../db/query_processors/TokenQueryProcessor');
 const ResponseBuilder = require('../helpers/ResponseBuilder');
 const UserRoleModel = require('../models/UserRoleModel');
 const ResponseCodes = require('../helpers/ResponseCodes');
@@ -17,7 +18,13 @@ class UserRepository {
       // Succedded
       req.body.password = await HashUtil.Hash(req.body.password);
       const insertIntoUser = await UserQueryProcessor.Create(req.body);
-      const addedTokenToPortfolio = await PortfolioQueryProcessor.Create('9', insertIntoUser.user_id, '5000');
+
+      const baseToken = await TokenQueryProcessor.GetOneByName({name : 'Dinar'});
+      if(!baseToken){
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+      }
+
+      const addedTokenToPortfolio = await PortfolioQueryProcessor.Create(baseToken.token_id, insertIntoUser.user_id, '5000');
 
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, {});
     } catch (err) {
@@ -53,10 +60,12 @@ class UserRepository {
 
       // Users banned?
       if (user.banned === true) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_BANNED, 409, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_BANNED, 403, null);
       }
 
-      // Get token
+      // Get token, ovo u select
+      delete user.password;
+      delete user.banned;
       const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
 
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, accessToken);
@@ -69,11 +78,8 @@ class UserRepository {
 
   static async BanUser (req) {
     try {
-      if (req.user.role !== UserRoleModel.role.ADMIN) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.FORBIDDEN_ACCESS, 403, null);
-      }
-
-      const user = await UserQueryProcessor.GetOneByID(req.body);
+      const user = await UserQueryProcessor.GetOneByID({user_id : req.params.id});
+      console.log(user);
       if (!user) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_DOES_NOT_EXIST, 400, null);
       }
