@@ -33,14 +33,14 @@ class Authentication {
     if (token == null) res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.LOGIN_FAILED, 401, null));
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-      if (err)  res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.NOT_AUTHORIZED, 403, null));
+      if (err) res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.NOT_AUTHORIZED, 403, null));
       req.user = user;
       next();
     });
   }
 
-  static AuthenticateAdminToken(req,res,next) {
-    if(req.user.role !== UserRoleModel.role.ADMIN) {
+  static AuthenticateAdminToken (req, res, next) {
+    if (req.user.role !== UserRoleModel.role.ADMIN) {
       res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.NOT_AUTHORIZED, 403, null));
     }
     next();

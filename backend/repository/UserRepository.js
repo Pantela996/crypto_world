@@ -3,7 +3,6 @@ const UserQueryProcessor = require('../db/query_processors/UserQueryProcessor');
 const PortfolioQueryProcessor = require('../db/query_processors/PortfolioQueryProcessor');
 const TokenQueryProcessor = require('../db/query_processors/TokenQueryProcessor');
 const ResponseBuilder = require('../helpers/ResponseBuilder');
-const UserRoleModel = require('../models/UserRoleModel');
 const ResponseCodes = require('../helpers/ResponseCodes');
 const jwt = require('jsonwebtoken');
 
@@ -19,8 +18,8 @@ class UserRepository {
       req.body.password = await HashUtil.Hash(req.body.password);
       const insertIntoUser = await UserQueryProcessor.Create(req.body);
 
-      const baseToken = await TokenQueryProcessor.GetOneByName({name : 'Dinar'});
-      if(!baseToken){
+      const baseToken = await TokenQueryProcessor.GetOneByName({ name: 'Dinar' });
+      if (!baseToken) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
       }
 
@@ -78,7 +77,7 @@ class UserRepository {
 
   static async BanUser (req) {
     try {
-      const user = await UserQueryProcessor.GetOneByID({user_id : req.params.id});
+      const user = await UserQueryProcessor.GetOneByID({ user_id: req.params.id });
       console.log(user);
       if (!user) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_DOES_NOT_EXIST, 400, null);

@@ -24,7 +24,7 @@ router.put('/issueRequest/:name', [Auth.VerifyDataPresence, Auth.AuthenticateTok
   }
 });
 
-router.put('/issueRequest/reject/:name', [Auth.VerifyDataPresence, Auth.AuthenticateToken,  Auth.AuthenticateAdminToken], async (req, res) => {
+router.put('/issueRequest/reject/:name', [Auth.VerifyDataPresence, Auth.AuthenticateToken, Auth.AuthenticateAdminToken], async (req, res) => {
   const result = await TokenRepository.RejectToken(req);
   res.status(result.status_code);
   if (result.success) {
@@ -54,7 +54,7 @@ router.put('/purchaseRequest/:id', [Auth.VerifyDataPresence, Auth.AuthenticateTo
   }
 });
 
-router.get('/top/:name', async(req,res) => {
+router.get('/top/:name', async (req, res) => {
   const result = await TokenRepository.TopHolders(req);
   res.status(result.status_code);
   if (result.success) {
@@ -64,7 +64,7 @@ router.get('/top/:name', async(req,res) => {
   }
 });
 
-router.get('/user/:user_id', async(req,res) => {
+router.get('/user/:user_id', async (req, res) => {
   const result = await TokenRepository.UserTokens(req);
   res.status(result.status_code);
   if (result.success) {
@@ -72,9 +72,9 @@ router.get('/user/:user_id', async(req,res) => {
   } else {
     res.json(new ResponseModel().Failed(result.message));
   }
-})
+});
 
-router.get('/active', async(req,res) => {
+router.get('/active', async (req, res) => {
   const result = await TokenRepository.ActiveTokens();
   res.status(result.status_code);
   if (result.success) {
@@ -82,10 +82,9 @@ router.get('/active', async(req,res) => {
   } else {
     res.json(new ResponseModel().Failed(result.message));
   }
-})
+});
 
-
-router.get('/:id/holders', async(req,res) => {
+router.get('/:id/holders', async (req, res) => {
   const result = await TokenRepository.TokenHolders(req);
   res.status(result.status_code);
   if (result.success) {
@@ -93,9 +92,9 @@ router.get('/:id/holders', async(req,res) => {
   } else {
     res.json(new ResponseModel().Failed(result.message));
   }
-})
+});
 
-router.post('/:token_id/sellingRequest', [Auth.VerifyDataPresence, Auth.AuthenticateToken], async(req,res) => {
+router.post('/:token_id/sellingRequest', [Auth.VerifyDataPresence, Auth.AuthenticateToken], async (req, res) => {
   const result = await TokenRepository.CreateSellingRequest(req);
   res.status(result.status_code);
   if (result.success) {
@@ -103,9 +102,9 @@ router.post('/:token_id/sellingRequest', [Auth.VerifyDataPresence, Auth.Authenti
   } else {
     res.json(new ResponseModel().Failed(result.message));
   }
-})
+});
 
-router.get('/sellingRequest/all', async(req,res) => {
+router.get('/sellingRequest/all', async (req, res) => {
   const result = await TokenRepository.FetchSellingRequests();
   res.status(result.status_code);
   if (result.success) {
@@ -113,9 +112,9 @@ router.get('/sellingRequest/all', async(req,res) => {
   } else {
     res.json(new ResponseModel().Failed(result.message));
   }
-})
+});
 
-router.put('/sellingRequest/:id', [Auth.AuthenticateToken], async(req,res) => {
+router.put('/sellingRequest/:id', [Auth.AuthenticateToken], async (req, res) => {
   const result = await TokenRepository.CloseSellingRequest(req);
   res.status(result.status_code);
   if (result.success) {
@@ -123,6 +122,6 @@ router.put('/sellingRequest/:id', [Auth.AuthenticateToken], async(req,res) => {
   } else {
     res.json(new ResponseModel().Failed(result.message));
   }
-})
+});
 
 module.exports = router;
