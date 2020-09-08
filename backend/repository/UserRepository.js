@@ -23,7 +23,7 @@ class UserRepository {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
       }
 
-      const addedTokenToPortfolio = await PortfolioQueryProcessor.Create(baseToken.token_id, insertIntoUser.user_id, '5000');
+      await PortfolioQueryProcessor.Create(baseToken.token_id, insertIntoUser.user_id, '5000');
 
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, {});
     } catch (err) {
@@ -87,7 +87,7 @@ class UserRepository {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_ALREADY_BANNED, 409, null);
       }
 
-      const bannedUser = await UserQueryProcessor.Ban(user.user_id);
+      await UserQueryProcessor.Ban(user.user_id);
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, null);
     } catch (err) {
       console.log(err);

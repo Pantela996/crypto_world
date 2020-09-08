@@ -14,7 +14,7 @@ class Authentication {
     if (paramsValid && emailFormatValid && passwordLengthValid) {
       next();
     } else {
-      res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_QUERY_PARAMS_FORMAT, 400, null));
+      return res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_QUERY_PARAMS_FORMAT, 400, null));
     }
   }
 
@@ -23,14 +23,14 @@ class Authentication {
     if (paramsValid && ValidationHelper.ValidateEmailFormat(req.body.email)) {
       next();
     } else {
-      res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_QUERY_PARAMS_FORMAT, 400, null));
+      return res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_QUERY_PARAMS_FORMAT, 400, null));
     }
   }
 
   static AuthenticateToken (req, res, next) {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
-    if (token == null) res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.LOGIN_FAILED, 401, null));
+    if (token === null) return res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.LOGIN_FAILED, 401, null));
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
       if (err) res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.NOT_AUTHORIZED, 403, null));
@@ -41,7 +41,8 @@ class Authentication {
 
   static AuthenticateAdminToken (req, res, next) {
     if (req.user.role !== UserRoleModel.role.ADMIN) {
-      res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.NOT_AUTHORIZED, 403, null));
+      console.log("here");
+      return res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.NOT_AUTHORIZED, 403, null));
     }
     next();
   }
@@ -54,7 +55,7 @@ class Authentication {
     if (paramsValid && iocInitValueValid && pricePerUnitValid) {
       next();
     } else {
-      res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_QUERY_PARAMS_FORMAT, 400, null));
+      return res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_QUERY_PARAMS_FORMAT, 400, null));
     }
   }
 
@@ -64,7 +65,7 @@ class Authentication {
     if (paramsValid) {
       next();
     } else {
-      res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_QUERY_PARAMS_FORMAT, 400, null));
+      return res.json(ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_QUERY_PARAMS_FORMAT, 400, null));
     }
   }
 }
