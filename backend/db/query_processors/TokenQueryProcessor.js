@@ -1,4 +1,5 @@
 var PostgresDB = require('../PostgresDB');
+const GLOBALS = require('../../globals/Globals');
 
 class TokenQueryProcessor{
 
@@ -7,37 +8,30 @@ class TokenQueryProcessor{
     static selectTokenByIDQuery = "SELECT * FROM token WHERE token_id = $1";
     static updateTokenStatusByNameQuery = "UPDATE token SET status = $1 WHERE name = $2 AND user_id = $3 RETURNING *";
     static selectUserTokensQuery = "SELECT token.user_id, token_id, public.\"user\".name,email FROM token INNER JOIN public.\"user\" ON token.user_id =  public.\"user\".user_id WHERE token.user_id = $1";
-    static selectActiveTokensQuery = "SELECT * FROM token where status = 2";
+    static selectActiveTokensQuery = "SELECT * FROM token where status = $1";
 
     static async Create(token, userID){
-        console.log(userID);
         const result = await PostgresDB.client.query(this.insertIntoTokenQuery, [token.name, token.initial_coin_offering, token.price_per_unit, userID]);
         return result.rows[0];
     }
 
     static async GetOneByName(token){
         const result = await PostgresDB.client.query(this.selectTokenByNameQuery, [token.name]);
-        if (result && result.rows.length === 0) {
-            return false;
-        }
         return result.rows[0];
     }
 
     static async GetOneByID(token){
         const result = await PostgresDB.client.query(this.selectTokenByIDQuery, [token.token_id]);
-        if (result && result.rows.length === 0) {
-            return false;
-        }
         return result.rows[0];
     }
 
     static async ApproveToken(token, userID){
-        const result = await PostgresDB.client.query(this.updateTokenStatusByNameQuery, [2, token.name, userID]);
+        const result = await PostgresDB.client.query(this.updateTokenStatusByNameQuery, [GLOBALS.ACTIVE_STATUS, token.name, userID]);
         return result.rows[0];
     }
 
     static async Reject(token, userID){
-        const result = await PostgresDB.client.query(this.updateTokenStatusByNameQuery, [1, token.name, userID]);
+        const result = await PostgresDB.client.query(this.updateTokenStatusByNameQuery, [GLOBALS.REJECT_STATUS, token.name, userID]);
         return result.rows[0];
     }
 
@@ -47,7 +41,7 @@ class TokenQueryProcessor{
     }
 
     static async Active(){
-        const result = await PostgresDB.client.query(this.selectActiveTokensQuery);
+        const result = await PostgresDB.client.query(this.selectActiveTokensQuery,[GLOBALS.ACTIVE_STATUS]);
         return result.rows;
     }
 

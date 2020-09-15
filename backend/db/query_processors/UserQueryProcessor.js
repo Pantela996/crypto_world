@@ -17,17 +17,11 @@ class UserQueryProcessor{
 
     static async GetOneByEmail(user){
         const result = await PostgresDB.client.query(this.selectUserByEmailQuery, [user.email]);
-        if (result && result.rows.length === 0) {
-            return false;
-        }
         return result.rows[0];
     }
     
     static async GetOneByID(user){
         const result = await PostgresDB.client.query(this.selectUserByIDQuery, [user.user_id]);
-        if (result && result.rows.length === 0) {
-            return false;
-        }
         return result.rows[0];
     }
 

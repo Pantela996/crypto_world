@@ -2,7 +2,6 @@ var PostgresDB = require('../PostgresDB');
 
 class PortfolioQueryProcessor{
     static insertIntoPortfolioQuery = "INSERT INTO portfolio (user_id, token_id, amount) VALUES ($1,$2,$3) RETURNING *";
-    static selectBaseTokenQuery = "SELECT * FROM portfolio WHERE token_id = 9 AND user_id = $1";
     static selectTokenByIDQuery = "SELECT * FROM portfolio WHERE token_id = $1 AND user_id = $2";
     static updatePortfolioBaseTokenQuery = "UPDATE portfolio SET amount = $1 WHERE user_id = $2 AND token_id = $3 RETURNING *";
     static topHoldersSelected = "SELECT * FROM portfolio where token_id = $2 ORDER BY amount DESC LIMIT $1";
@@ -11,11 +10,6 @@ class PortfolioQueryProcessor{
 
     static async Create(tokenID, userID, amount){
         const result = await PostgresDB.client.query(this.insertIntoPortfolioQuery, [userID, tokenID, amount]);
-        return result.rows[0];
-    }
-
-    static async GetPortfolioBaseTokenAmount(user){
-        const result = await PostgresDB.client.query(this.selectBaseTokenQuery, [user.user_id]);
         return result.rows[0];
     }
 
@@ -30,7 +24,6 @@ class PortfolioQueryProcessor{
     }
 
     static async TopHolders(tokenID){
-        console.log(tokenID);
         const result = await PostgresDB.client.query(this.topHoldersSelected, [5, tokenID]);
         return result.rows;
     }

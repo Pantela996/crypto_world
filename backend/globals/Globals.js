@@ -1,0 +1,8 @@
+module.exports = {
+    MIN_PASSWORD_LENGTH : 5,
+    ACTIVE_STATUS : 2,
+    REJECT_STATUS : 1,
+    BASE_TOKEN_NAME : "Dinar",
+    INITIAL_BASE_TOKEN_AMOUNT : 5000,
+    INITIAL_FEE : 1000
+}

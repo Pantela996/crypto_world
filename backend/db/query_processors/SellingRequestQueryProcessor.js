@@ -7,9 +7,9 @@ class SellingRequestProcessor{
     static selectSellRequestByIDQuery = "SELECT * FROM sell_request where sell_request_id = $1"; 
     static deleteSellRequest = "DELETE FROM sell_request where sell_request_id = $1";
 
-    static async Create(sellingRequest){
+    static async Create(sellingRequestModel){
         const result = await PostgresDB.client.query(this.insertIntoTokenQuery,
-            [sellingRequest.user.user_id, sellingRequest.body.amount, sellingRequest.body.coef, sellingRequest.params.token_id]);
+            [sellingRequestModel.user.user_id, sellingRequestModel.amount, sellingRequestModel.coef, sellingRequestModel.token_id]);
         return result.rows[0];
     }
 

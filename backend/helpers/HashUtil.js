@@ -12,11 +12,9 @@ class HashUtil {
   }
 
   static async Compare (input, hashedInput) {
-    console.log('Called');
     const isSame = await new Promise((resolve, reject) => {
       bcrypt.compare(input, hashedInput, function (err, result) {
         if (err) console.log(err);
-        console.log(result);
         resolve(result);
       });
     });

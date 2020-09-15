@@ -1,9 +1,10 @@
 var PostgresDB = require('../PostgresDB');
+const GLOBALS = require('../../globals/Globals');
 
-class TransactionRequestProcessor{
+class TransactionRequestQueryProcessor{
     static insertIntoTransactionRequestQuery = "INSERT INTO transaction_request (buyer_id, seller_id, amount, token_id) VALUES ($1,$2,$3,$4) RETURNING *";
     static selectTransactionRequestByIDQuery = "SELECT * FROM transaction_request WHERE transaction_request_id = $1";
-    static updateTransactionRequestQuery =  "UPDATE transaction_request SET status = 2 WHERE transaction_request_id = $1 RETURNING *";
+    static updateTransactionRequestQuery =  "UPDATE transaction_request SET status = $2 WHERE transaction_request_id = $1 RETURNING *";
 
     static async Create(buyer_id, seller_id, amount, token_id){
         const result = await PostgresDB.client.query(this.insertIntoTransactionRequestQuery, [buyer_id, seller_id, amount, token_id]);
@@ -19,11 +20,11 @@ class TransactionRequestProcessor{
     }
 
     static async ApproveTransactionRequest(transaction_request_id){
-        const result = await PostgresDB.client.query(this.updateTransactionRequestQuery, [transaction_request_id]);
+        const result = await PostgresDB.client.query(this.updateTransactionRequestQuery, [transaction_request_id, GLOBALS.ACTIVE_STATUS]);
         return result.rows[0];
     }
 
 
 }
 
-module.exports = TransactionRequestProcessor;
+module.exports = TransactionRequestQueryProcessor;

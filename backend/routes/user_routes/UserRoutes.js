@@ -15,7 +15,10 @@ router.get('/all', Auth.AuthenticateToken, async (req, res) => {
 });
 
 router.put('/ban/:id', [Auth.AuthenticateToken, Auth.AuthenticateAdminToken], async (req, res) => {
-  const result = await UserRepo.BanUser(req);
+  const banUserModel = {
+    id : req.params.id
+  }
+  const result = await UserRepo.BanUser(banUserModel);
   res.status(result.status_code);
   if (result.success) {
     res.json(new ResponseModel().Success(result.data));

@@ -7,23 +7,23 @@ const ResponseCodes = require('../helpers/ResponseCodes');
 const jwt = require('jsonwebtoken');
 
 class UserRepository {
-  static async RegisterUser (req) {
+  static async RegisterUser (registerUserModel) {
     try {
-      const userFoundByEmail = await UserQueryProcessor.GetOneByEmail(req.body);
+      const userFoundByEmail = await UserQueryProcessor.GetOneByEmail(registerUserModel);
       // 409 is conflict error
       if (userFoundByEmail) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.EMAIL_ALREADY_EXISTS, 409, null);
       }
       // Succedded
-      req.body.password = await HashUtil.Hash(req.body.password);
-      const insertIntoUser = await UserQueryProcessor.Create(req.body);
+      registerUserModel.password = await HashUtil.Hash(registerUserModel.password);
+      const insertIntoUser = await UserQueryProcessor.Create(registerUserModel);
 
-      const baseToken = await TokenQueryProcessor.GetOneByName({ name: 'Dinar' });
+      const baseToken = await TokenQueryProcessor.GetOneByName({ name: GLOBALS.BASE_TOKEN_NAME });
       if (!baseToken) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
       }
 
-      await PortfolioQueryProcessor.Create(baseToken.token_id, insertIntoUser.user_id, '5000');
+      await PortfolioQueryProcessor.Create(baseToken.token_id, insertIntoUser.user_id, GLOBALS.INITIAL_BASE_TOKEN_AMOUNT);
 
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, {});
     } catch (err) {
@@ -43,22 +43,22 @@ class UserRepository {
     }
   }
 
-  static async Login (req) {
+  static async Login (loginModel) {
     try {
-      const user = await UserQueryProcessor.GetOneByEmail(req.body);
+      const user = await UserQueryProcessor.GetOneByEmail(loginModel);
       // If user does not exists
       if (!user) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_EMAIL_OR_PASSWORD, 400, null);
       }
 
-      const isValidPassword = await HashUtil.Compare(req.body.password, user.password);
+      const isValidPassword = await HashUtil.Compare(loginModel.password, user.password);
       // Bad Request error
       if (!isValidPassword) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.INVALID_PASSWORD, 400, null);
       }
 
       // Users banned?
-      if (user.banned === true) {
+      if (user.banned) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_BANNED, 403, null);
       }
 
@@ -75,15 +75,14 @@ class UserRepository {
     }
   }
 
-  static async BanUser (req) {
+  static async BanUser (banUserModel) {
     try {
-      const user = await UserQueryProcessor.GetOneByID({ user_id: req.params.id });
-      console.log(user);
+      const user = await UserQueryProcessor.GetOneByID({ user_id: banUserModel.id });
       if (!user) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_DOES_NOT_EXIST, 400, null);
       }
 
-      if (user.banned === true) {
+      if (user.banned) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_ALREADY_BANNED, 409, null);
       }
 

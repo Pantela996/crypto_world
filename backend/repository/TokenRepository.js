@@ -3,51 +3,52 @@ const ResponseBuilder = require('../helpers/ResponseBuilder');
 const ResponseCodes = require('../helpers/ResponseCodes');
 const UserQueryProcessor = require('../db/query_processors/UserQueryProcessor');
 const PortfolioQueryProcessor = require('../db/query_processors/PortfolioQueryProcessor');
-const SellingRequestProcessor = require('../db/query_processors/SellingRequestProcessor');
-const TransactionRequestProcessor = require('../db/query_processors/TransactionRequestProcessor');
+const SellingRequestProcessor = require('../db/query_processors/SellingRequestQueryProcessor');
+const TransactionRequestProcessor = require('../db/query_processors/TransactionRequestQueryProcessor');
 const TokenStatusModel = require('../models/TokenStatusModel');
 const TransactionRequestStatusModel = require('../models/TranscationRequestStatusModel');
 const TokenRepositoryHelper = require('../helpers/TokenRepositoryHelper');
+const GLOBALS = require('../globals/Globals');
 
 class TokenRepository {
-  static async CreateToken (req) {
+  static async CreateToken (issueRequestModel) {
     try {
-      const userID = req.user.user_id;
-      const tokenFoundByName = await TokenQueryProcessor.GetOneByName(req.body);
-      const userTokenHolder = await UserQueryProcessor.GetOneByID(req.user);
+      const userID = issueRequestModel.user_id;
+      const tokenFoundByName = await TokenQueryProcessor.GetOneByName({name : issueRequestModel.name});
+      const userTokenHolder = await UserQueryProcessor.GetOneByID({user_id : issueRequestModel.user_id});
 
       // 409 is conflict error
       if (tokenFoundByName) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.NAME_ALREADY_EXISTS, 409, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_NAME_ALREADY_EXISTS, 409, null);
       }
 
       if (!userTokenHolder) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.USER_DONT_EXIST, 404, null);
       }
 
       if (userTokenHolder.banned) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_BANNED, 403, null);
       }
 
-      const baseToken = await TokenQueryProcessor.GetOneByName({ name: 'Dinar' });
+      const baseToken = await TokenQueryProcessor.GetOneByName({ name: GLOBALS.BASE_TOKEN_NAME });
       if (!baseToken) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
       }
 
-      const userBaseToken = await PortfolioQueryProcessor.GetPortfolioBaseTokenAmount({ user_id: userID });
+      const userBaseToken = await PortfolioQueryProcessor.GetOneByID(baseToken.token_id, { user_id: userID });
 
       if (!userBaseToken) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
       }
 
-      if (userBaseToken.amount < 1000) {
+      if (userBaseToken.amount < GLOBALS.INITIAL_FEE) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.INSUFFICIENT_FUNDS, 404, null);
       }
 
-      userBaseToken.amount = parseFloat(userBaseToken.amount) - 1000;
+      userBaseToken.amount = parseFloat(userBaseToken.amount) - GLOBALS.INITIAL_FEE;
 
       await PortfolioQueryProcessor.UpdateTokenAmount(userBaseToken.amount, userID, baseToken.token_id);
-      await TokenQueryProcessor.Create(req.body, userID);
+      await TokenQueryProcessor.Create(issueRequestModel, userID);
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, null);
     } catch (err) {
       console.log(err);
@@ -56,12 +57,13 @@ class TokenRepository {
     }
   }
 
-  static async ApproveToken (req) {
+  static async ApproveToken (approveIssueRequest) {
     try {
-      const tokenFoundByName = await TokenQueryProcessor.GetOneByName({ name: req.params.name });
+   
+      const tokenFoundByName = await TokenQueryProcessor.GetOneByName({ name: approveIssueRequest.name });
 
       if (!tokenFoundByName) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
       }
 
       if (tokenFoundByName.status === TokenStatusModel.status.REJECTED) {
@@ -70,7 +72,7 @@ class TokenRepository {
 
       const userTokenHolder = await UserQueryProcessor.GetOneByID({ user_id: tokenFoundByName.user_id });
       if (!userTokenHolder) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.USER_DONT_EXIST, 404, null);
       }
 
       if (userTokenHolder.banned) {
@@ -82,7 +84,7 @@ class TokenRepository {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.ALREADY_APPROVED, 400, null);
       }
 
-      const approvedToken = await TokenQueryProcessor.ApproveToken({ name: req.params.name }, tokenFoundByName.user_id);
+      const approvedToken = await TokenQueryProcessor.ApproveToken({ name: approveIssueRequest.name }, tokenFoundByName.user_id);
       await PortfolioQueryProcessor.Create(approvedToken.token_id, approvedToken.user_id, approvedToken.initial_coin_offering);
 
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, null);
@@ -93,30 +95,28 @@ class TokenRepository {
     }
   }
 
-  static async RejectToken (req) {
+  static async RejectToken (rejectIssueRequest) {
     try {
-      const tokenFoundByName = await TokenQueryProcessor.GetOneByName({ name: req.params.name });
-
-      console.log(tokenFoundByName);
+      const tokenFoundByName = await TokenQueryProcessor.GetOneByName({ name: rejectIssueRequest.name });
 
       if (!tokenFoundByName) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
       }
 
       if (tokenFoundByName.status === TokenStatusModel.status.REJECTED) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.ALREADY_REJECTED, 400, null);
       }
 
-      const baseToken = await TokenQueryProcessor.GetOneByName({ name: 'Dinar' });
+      const baseToken = await TokenQueryProcessor.GetOneByName({ name: GLOBALS.BASE_TOKEN_NAME });
       if (!baseToken) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
       }
 
-      const userBaseToken = await PortfolioQueryProcessor.GetPortfolioBaseTokenAmount({ user_id: tokenFoundByName.user_id });
+      const userBaseToken = await PortfolioQueryProcessor.GetOneByID(baseToken.token_id, { user_id: tokenFoundByName.user_id });
       if (!userBaseToken) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.USER_DONT_EXIST, 404, null);
       }
-      userBaseToken.amount = parseFloat(userBaseToken.amount) + 1000;
+      userBaseToken.amount = parseFloat(userBaseToken.amount) + GLOBALS.INITIAL_FEE;
       await PortfolioQueryProcessor.UpdateTokenAmount(userBaseToken.amount, tokenFoundByName.user_id, baseToken.token_id);
       await TokenQueryProcessor.Reject(tokenFoundByName, tokenFoundByName.user_id);
 
@@ -128,14 +128,14 @@ class TokenRepository {
     }
   }
 
-  static async CreatePurchase (req) {
+  static async CreatePurchase (purchaseRequestModel) {
     try {
-      const buyerUser = await UserQueryProcessor.GetOneByID(req.user);
-      const sellerUser = await UserQueryProcessor.GetOneByID({ user_id: req.params.seller_id });
+      const buyerUser = await UserQueryProcessor.GetOneByID(purchaseRequestModel.user);
+      const sellerUser = await UserQueryProcessor.GetOneByID({ user_id: purchaseRequestModel.seller_id });
 
       var participantsExist = await TokenRepositoryHelper.CheckIfTransactionParticipantsExist(buyerUser, sellerUser);
       if (participantsExist === false) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 400, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.USER_DONT_EXIST, 400, null);
       }
 
       // Users banned?
@@ -147,38 +147,38 @@ class TokenRepository {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.SELLER_USER_BANNED, 400, null);
       }
 
-      var tradeToken = await TokenQueryProcessor.GetOneByID({ token_id: req.params.token_id });
+      var tradeToken = await TokenQueryProcessor.GetOneByID({ token_id: purchaseRequestModel.token_id });
 
 
       if (!tradeToken || tradeToken.status !== TokenStatusModel.status.APPROVED) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
+      }
+      const baseToken = await TokenQueryProcessor.GetOneByName({ name: GLOBALS.BASE_TOKEN_NAME });
+      if (!baseToken) {
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
       }
 
       // Get buyers and seller portfolio, base and trade token.
-      const buyerUserPortfolio = await PortfolioQueryProcessor.GetPortfolioBaseTokenAmount(buyerUser);
-      const sellerUserPortfolio = await PortfolioQueryProcessor.GetOneByID(req.params.token_id, sellerUser);
-
-      console.log(buyerUser);
+      const buyerUserPortfolio = await PortfolioQueryProcessor.GetOneByID(baseToken.token_id, buyerUser);
+      const sellerUserPortfolio = await PortfolioQueryProcessor.GetOneByID(purchaseRequestModel.token_id, sellerUser);
 
       if (!sellerUserPortfolio || !buyerUserPortfolio) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.PORTFOLIO_DOESNT_EXIST, 404, null);
       }
 
-      console.log(buyerUserPortfolio, sellerUserPortfolio);
-
       // Seller has enough amount of desired token?
-      if (sellerUserPortfolio.amount < req.body.amount) {
+      if (sellerUserPortfolio.amount < purchaseRequestModel.amount) {
         console.log('More tokens then available');
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.NOT_ENOUGH_TOKENS, 400, null);
       }
 
-      const { available, needed } = await TokenRepositoryHelper.CompareTokenValues(buyerUserPortfolio, sellerUserPortfolio, req.body.amount);
+      const { available, needed } = await TokenRepositoryHelper.CompareTokenValues(buyerUserPortfolio, sellerUserPortfolio, purchaseRequestModel.amount);
       // When converted, compare values in terms of base token
       if (available < needed) {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.INSUFFICIENT_FUNDS, 400, null);
       }
 
-      await TransactionRequestProcessor.Create(req.user.user_id, req.params.seller_id, req.body.amount, req.params.token_id);
+      await TransactionRequestProcessor.Create(purchaseRequestModel.user.user_id, purchaseRequestModel.seller_id, purchaseRequestModel.amount, purchaseRequestModel.token_id);
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, null);
     } catch (err) {
       console.log(err);
@@ -187,14 +187,12 @@ class TokenRepository {
     }
   }
 
-  static async ApproveRequest (req) {
+  static async ApproveRequest (approvePurchaseRequestModel) {
     try {
-      const transactionRequest = await TransactionRequestProcessor.GetOneById(req.params.id);
-
-      console.log(transactionRequest);
+      const transactionRequest = await TransactionRequestProcessor.GetOneById(approvePurchaseRequestModel.id);
 
       if (!transactionRequest) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TRANSACTION_DOESNT_EXIST, 404, null);
       }
 
       const buyerUser = await UserQueryProcessor.GetOneByID({ user_id: transactionRequest.buyer_id });
@@ -203,7 +201,7 @@ class TokenRepository {
       // Check if Participants and exist
       var participantsExist = await TokenRepositoryHelper.CheckIfTransactionParticipantsExist(buyerUser, sellerUser);
       if (participantsExist === false) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.USER_DONT_EXIST, 404, null);
       }
 
       // Users banned?
@@ -218,23 +216,34 @@ class TokenRepository {
       // Token exists?
       var tradeToken = await TokenQueryProcessor.GetOneByID({ token_id: transactionRequest.token_id });
       if (!tradeToken || tradeToken.status !== TokenStatusModel.status.APPROVED) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
+      }
+
+      const baseToken = await TokenQueryProcessor.GetOneByName({ name: GLOBALS.BASE_TOKEN_NAME });
+      if (!baseToken) {
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
       }
 
       // Seller has desired token?
       const sellerUserToken = await PortfolioQueryProcessor.GetOneByID(transactionRequest.token_id, sellerUser);
-      var buyerUserToken = await PortfolioQueryProcessor.GetOneByID(transactionRequest.token_id, buyerUser);
-      const sellerUserBaseToken = await PortfolioQueryProcessor.GetPortfolioBaseTokenAmount(sellerUser);
-      const buyerUserBaseToken = await PortfolioQueryProcessor.GetPortfolioBaseTokenAmount(buyerUser);
 
       if (!sellerUserToken) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
       }
 
+      var buyerUserToken = await PortfolioQueryProcessor.GetOneByID(transactionRequest.token_id, buyerUser);
+
+      if (!buyerUserToken) {
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
+      }
+  
       // Seller has enough amount of desired token?
       if (sellerUserToken.amount < transactionRequest.amount) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 403, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.NOT_ENOUGH_TOKENS, 403, null);
       }
+
+      const sellerUserBaseToken = await PortfolioQueryProcessor.GetOneByID(baseToken.token_id, sellerUser);
+      const buyerUserBaseToken = await PortfolioQueryProcessor.GetOneByID(baseToken.token_id, buyerUser);
 
       // Check Funds
       var { available, needed } = await TokenRepositoryHelper.CompareTokenValues(buyerUserBaseToken, sellerUserToken, transactionRequest.amount);
@@ -249,6 +258,8 @@ class TokenRepository {
         return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.ALREADY_APPROVED, 400, null);
       }
 
+ 
+
       // Do transfer logic
       buyerUserBaseToken.amount = parseFloat(buyerUserBaseToken.amount) - needed;
       sellerUserBaseToken.amount = parseFloat(sellerUserBaseToken.amount) + needed;
@@ -261,16 +272,6 @@ class TokenRepository {
       }
 
       sellerUserToken.amount = parseFloat(sellerUserToken.amount) - transactionRequest.amount;
-
-      console.log(buyerUserBaseToken, sellerUserBaseToken, buyerUserToken, sellerUserToken);
-
-      // Get Dinar from db
-      // 409 fixes
-
-      const baseToken = await TokenQueryProcessor.GetOneByName({ name: 'Dinar' });
-      if (!baseToken) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
-      }
 
       // Update buyer, seller portoflios, and transaction status
       await PortfolioQueryProcessor.UpdateTokenAmount(buyerUserBaseToken.amount, buyerUser.user_id, baseToken.token_id);
@@ -289,12 +290,12 @@ class TokenRepository {
     }
   }
 
-  static async TopHolders (req) {
+  static async TopHolders (topTokenHoldersModel) {
     try {
-      const tokenName = req.params.name;
+      const tokenName = topTokenHoldersModel.name;
       const token = await TokenQueryProcessor.GetOneByName({ name: tokenName });
       if (!token) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
       }
       const topHolders = await PortfolioQueryProcessor.TopHolders(token.token_id);
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, topHolders);
@@ -305,14 +306,13 @@ class TokenRepository {
     }
   }
 
-  static async UserTokens (req) {
+  static async UserTokens (topTokenHoldersModel) {
     try {
-      const userID = req.params.user_id;
+      const userID = topTokenHoldersModel.user_id;
       const user = await UserQueryProcessor.GetOneByID({ user_id: userID });
 
-      console.log(user);
       if (!user) {
-        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.USER_DONT_EXIST, 404, null);
       }
 
       if (user.banned) {
@@ -338,12 +338,12 @@ class TokenRepository {
     }
   }
 
-  static async TokenHolders (req) {
+  static async TokenHolders (tokenHoldersModel) {
     try {
-      const tokenID = req.params.id;
+      const tokenID = tokenHoldersModel.id;
       const token = await TokenQueryProcessor.GetOneByID({ token_id: tokenID });
 
-      if (!token) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+      if (!token) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
 
       const tokenHolders = await PortfolioQueryProcessor.Holders(tokenID);
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, tokenHolders);
@@ -354,28 +354,28 @@ class TokenRepository {
     }
   }
 
-  static async CreateSellingRequest (req) {
+  static async CreateSellingRequest (sellingRequestModel) {
     try {
-      const tokenID = req.params.token_id;
+      const tokenID = sellingRequestModel.token_id;
       const token = await TokenQueryProcessor.GetOneByID({ token_id: tokenID });
 
-      if (!token) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+      if (!token) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
 
-      const user = await UserQueryProcessor.GetOneByID({ user_id: req.user.user_id });
+      const user = await UserQueryProcessor.GetOneByID({ user_id: sellingRequestModel.user.user_id });
 
-      if (!user) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+      if (!user) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.USER_DONT_EXIST, 404, null);
 
       if (user.banned) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.auth.USER_BANNED, 403, null);
 
-      const sellerUserToken = await PortfolioQueryProcessor.GetOneByID(token.token_id, { user_id: req.user.user_id });
+      const sellerUserToken = await PortfolioQueryProcessor.GetOneByID(token.token_id, { user_id: sellingRequestModel.user.user_id });
 
-      if (!sellerUserToken) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+      if (!sellerUserToken) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
 
-      if (sellerUserToken.amount < req.body.amount) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.INSUFFICIENT_FUNDS, 403, null);
+      if (sellerUserToken.amount < sellingRequestModel.amount) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.INSUFFICIENT_FUNDS, 403, null);
 
-      if (req.body.coef > 1) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.FORBIDDEN_COEFFICIENT_VALUE, 403, null);
+      if (sellingRequestModel.coef > 1) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.FORBIDDEN_COEFFICIENT_VALUE, 403, null);
 
-      await SellingRequestProcessor.Create(req);
+      await SellingRequestProcessor.Create(sellingRequestModel);
       return ResponseBuilder.BuildResponse(1, '', ResponseCodes.auth.SUCCESS, 200, null);
     } catch (err) {
       console.log(err);
@@ -395,20 +395,21 @@ class TokenRepository {
     }
   }
 
-  static async CloseSellingRequest (req) {
+  static async CloseSellingRequest (closeSellingRequestModel) {
     try {
-      const sellRequestID = req.params.id;
-      const buyerID = req.user.user_id;
-
+      const sellRequestID = closeSellingRequestModel.id;
+      const buyerID = closeSellingRequestModel.user.user_id;
+      
       const sellRequest = await SellingRequestProcessor.GetOneByID(sellRequestID);
 
-      if (!sellRequest) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+      if (!sellRequest) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.SELL_REQUEST_DOESNT_EXIST, 404, null);
 
       const buyerUser = await UserQueryProcessor.GetOneByID({ user_id: buyerID });
-      if (!buyerUser) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+      if (!buyerUser) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.USER_DONT_EXIST, 404, null);
 
       const sellerUser = await UserQueryProcessor.GetOneByID({ user_id: sellRequest.seller_id });
-      if (!sellerUser) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+      if (!sellerUser) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.USER_DONT_EXIST, 404, null);
+
 
       if (sellerUser.user_id === buyerUser.user_id) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.FORBIDDEN_ACCESS, 403, null);
 
@@ -419,17 +420,20 @@ class TokenRepository {
 
       // Token exists?
       var tradeToken = await TokenQueryProcessor.GetOneByID({ token_id: sellRequest.token_id });
-      if (!tradeToken || tradeToken.status !== TokenStatusModel.status.APPROVED) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
+      if (!tradeToken || tradeToken.status !== TokenStatusModel.status.APPROVED) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
 
+      const baseToken = await TokenQueryProcessor.GetOneByName({ name: GLOBALS.BASE_TOKEN_NAME });
+      if (!baseToken) {
+        return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.TOKEN_DOESNT_EXIST, 404, null);
+      }
       // Get buyers and seller portfolio
-      const buyerUserToken = await PortfolioQueryProcessor.GetPortfolioBaseTokenAmount(buyerUser);
+      const buyerUserToken = await PortfolioQueryProcessor.GetOneByID(baseToken.token_id, buyerUser);
       const sellerUserToken = await PortfolioQueryProcessor.GetOneByID(sellRequest.token_id, sellerUser);
 
-      if (!sellerUserToken || !buyerUserToken) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.RESOURCE_DONT_EXIST, 404, null);
-      console.log(parseFloat(sellerUserToken.amount) < parseFloat(sellRequest.amount));
+      if (!sellerUserToken || !buyerUserToken) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.PORTFOLIO_DOESNT_EXIST, 404, null);
       // Seller has enough amount of desired token?
       if (parseFloat(sellerUserToken.amount) < parseFloat(sellRequest.amount)) return ResponseBuilder.BuildResponse(0, '', ResponseCodes.token.NOT_ENOUGH_TOKENS, 400, null);
-      
+
       // Check Funds
       var { available, needed } = await TokenRepositoryHelper.CompareTokenValues(buyerUserToken, sellerUserToken, sellRequest.amount);
       available = parseFloat(available);
